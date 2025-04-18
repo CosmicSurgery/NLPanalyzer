@@ -1,25 +1,32 @@
 import re
 import os
 
-
-
 def startsWithDateTime(s):
-   pattern = '^(\d+/\d+/\d+, \d+:\d+\d+ [A-Z]*) -'
-   result = re.match(pattern, s)
-   if result:
-      return True
-   return False
+    pattern1 = r'^(\d+/\d+/\d+, \d+:\d+\d+ [A-Z]*) -'
+    pattern2 = r'^(\d+/\d+/\d+ \d+:\d+\d+) -'
+    result1 = re.match(pattern1, s)
+    result2 = re.match(pattern2, s)
+    if result1 or result2:
+        return True
+    return False
 
     
 def startsWithAuthor(s):
    patterns = [
-        'Angelita 🦧:',
-        '([\w]+):',                        # First Name
-        '([\w]+[\s]+[\w]+):',              # First Name + Last Name
-        '([\w]+[\s]+[\w]+[\s]+[\w]+):',    # First Name + Middle Name + Last Name
-        '([+]\d{2} \d{5} \d{5}):',         # Mobile Number (India)
-        '([+]\d{2} \d{3} \d{3} \d{4}):',   # Mobile Number (US)
-        '([+]\d{2} \d{4} \d{7})'           # Mobile Number (Europe)
+        r'Angelita 🦧:',
+        r'Louisa \(HSK\):',
+        r'🧀 🧀 🧀:',
+        r'Kira Arlt \(HSK\):',
+        r'Tiziana \(Couchsurf\):',
+        r'Mr. S:',
+        r'G-dizzle:',
+        r'Good Ol\' Kyle:',
+        r'([\w]+):',                        # First Name
+        r'([\w]+[\s]+[\w]+):',              # First Name + Last Name
+        r'([\w]+[\s]+[\w]+[\s]+[\w]+):',    # First Name + Middle Name + Last Name
+        r'([+]\d{2} \d{5} \d{5}):',         # Mobile Number (India)
+        r'([+]\d{2} \d{3} \d{3} \d{4}):',   # Mobile Number (US)
+        r'([+]\d{2} \d{4} \d{7})'           # Mobile Number (Europe)
    ] 
    pattern = '^' + '|'.join(patterns)
    result = re.match(pattern, s)
@@ -29,7 +36,7 @@ def startsWithAuthor(s):
    
 
 my_name = 'Miles Keating'
-PATH = '/home/miles/pydir/socialLogs' 
+PATH = 'chats' 
 directory = os.listdir(PATH)
    
 def getDataPoint(line):
@@ -39,14 +46,15 @@ def getDataPoint(line):
     
    dateTime = splitLine[0] # dateTime = '18/06/17, 22:47'
     
-   date, time = dateTime.split(', ') # date = '18/06/17'; time = '22:47'
+   date, time = dateTime.split(' ') # date = '18/06/17'; time = '22:47'
     
    message = ' '.join(splitLine[1:]) # message = 'Loki: Why do you have 2 numbers, Banner?'
     
    if startsWithAuthor(message): # True
-      splitMessage = message.split(': ') # splitMessage = ['Loki', 'Why do you have 2 numbers, Banner?']
+      splitMessage = message.split(':') # splitMessage = ['Loki', 'Why do you have 2 numbers, Banner?']
       author = splitMessage[0] # author = 'Loki'
       message = ' '.join(splitMessage[1:]) # message = 'Why do you have 2 numbers, Banner?'
+      message = message.strip()
    else:
       author = None
    return date, time, author, message
