@@ -4,11 +4,15 @@ import os
 def startsWithDateTime(s):
     pattern1 = r'^(\d+/\d+/\d+, \d+:\d+\d+ [A-Z]*) -'
     pattern2 = r'^(\d+/\d+/\d+ \d+:\d+\d+) -'
+    pattern3 = r'^(\[\d+-\d+-\d+ \d+:\d+\d+\])'
     result1 = re.match(pattern1, s)
     result2 = re.match(pattern2, s)
+    result3 = re.match(pattern3, s)
     if result1 or result2:
-        return True
-    return False
+        return 1
+    elif result3:
+        return 2
+    return 0
 
     
 def startsWithAuthor(s):
@@ -39,10 +43,10 @@ my_name = 'Miles Keating'
 PATH = 'chats' 
 directory = os.listdir(PATH)
    
-def getDataPoint(line):
+def getDataPoint_fromExport(line):
    # line = 18/06/17, 22:47 - Loki: Why do you have 2 numbers, Banner?
     
-   splitLine = line.split(' - ') # splitLine = ['18/06/17, 22:47', 'Loki: Why do you have 2 numbers, Banner?']
+   splitLine = line.split(' - ', maxsplit=1) # splitLine = ['18/06/17, 22:47', 'Loki: Why do you have 2 numbers, Banner?']
     
    dateTime = splitLine[0] # dateTime = '18/06/17, 22:47'
     
@@ -58,8 +62,21 @@ def getDataPoint(line):
    else:
       author = None
    return date, time, author, message
+
+def getDataPoint_fromDatabase(line):
+    splitLine = line.split('] ', maxsplit=1)
+    dateTime = splitLine[0][1:]
+    date, time = dateTime.split(' ')
+    message = splitLine[1]
+    if startsWithAuthor(message):
+        splitMessage = message.split(':', maxsplit=1)
+        author, message = splitMessage
+    else:
+        author = None
+    return date, time, author, message
     
 parsedData = [] # List to keep track of data so it can be used by a Pandas dataframe
+startsWithDatetime_val = 0
 
 for file in directory:
     with open(PATH +'/'+ file, encoding="utf-8") as fp:
@@ -67,17 +84,21 @@ for file in directory:
 
         messageBuffer = [] # Buffer to capture intermediate output for multi-line messages
         date, time, author = None, None, None # Intermediate variables to keep track of the current message being processed
-        conversation = file[19:len(file)-4]
+        conversation = 'Angelita 🦧' #file[19:len(file)-4]
         while True:
           line = fp.readline() 
           if not line: # Stop reading further if end of file has been reached
              break    
           line = line.strip() # Guarding against erroneous leading and trailing whitespaces
-          if startsWithDateTime(line): # If a line starts with a Date Time pattern, then this indicates the beginning of a new message
+          startsWithDatetime_val = startsWithDateTime(line)
+          if startsWithDatetime_val: # If a line starts with a Date Time pattern, then this indicates the beginning of a new message
              if len(messageBuffer) > 0: # Check if the message buffer contains characters from previous iterations
                 parsedData.append([date, time, author, ' '.join(messageBuffer), conversation]) # Save the tokens from the previous message in parsedData
              messageBuffer.clear() # Clear the message buffer so that it can be used for the next message
-             date, time, author, message = getDataPoint(line) # Identify and extract tokens from the line
+             if startsWithDatetime_val == 1:
+                date, time, author, message = getDataPoint_fromExport(line) # Identify and extract tokens from the line
+             if startsWithDatetime_val == 2:
+                date, time, author, message = getDataPoint_fromDatabase(line) # Identify and extract tokens from the line
              messageBuffer.append(message) # Append message to buffer
           else:
              messageBuffer.append(line) # If a line doesn't start with a Date Time pattern, then it is part of a multi-line message. So, just append to buffer
