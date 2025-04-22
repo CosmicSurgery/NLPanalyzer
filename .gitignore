@@ -1,3 +1,5 @@
 bokeh vis*
 *.txt
+!data/DROP_TXT_HERE/example.txt
 staging
+*.ipynb*
