@@ -1,4 +1,8 @@
 import argparse
+import os
+
+# modules
+from data import processor
 
 def main():
     # Create the parser
@@ -9,6 +13,7 @@ def main():
     group.add_argument('--process', action='store_true', help='Process the data')
     group.add_argument('--dashboard', action='store_true', help='Launch the interactive dashboard')
     group.add_argument('--report', action='store_true', help='Generate a static report')
+    group.add_argument('--clear', action='store_true', help='Clear all chat data in memory and reset all log files')
     
     # Parse the arguments
     args = parser.parse_args()
@@ -20,12 +25,21 @@ def main():
         launch_dashboard()
     elif args.report:
         generate_report()
+    elif args.clear:
+        clear_data()
     else:
         parser.print_help()
+
+def clear_data():
+    print("Clearing data...")
+    os.remove(os.path.join(os.getcwd(), 'data', 'status.log'))
+    os.remove(os.path.join(os.getcwd(), 'vis', 'data.h5'))
+    
 
 def process_data():
     print("Processing data...")
     # Add your data processing logic here
+    processor.main(PATH=os.path.join(os.getcwd(),'data'))
 
 def launch_dashboard():
     print("Launching interactive dashboard...")
