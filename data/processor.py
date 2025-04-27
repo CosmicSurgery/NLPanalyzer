@@ -39,6 +39,46 @@ def save_status_log(status, PATH):
     with open(os.path.join(PATH,"status.log"), "w") as f:
         json.dump(status, f, indent=2)
 
+# Transforms the Datetime column to type pandas Datetime, also returns any files that don't match with a provided datetime format
+def detect_datetime_formats(df):
+    result_df = df.copy()
+    conversation_formats = {}
+    formats = [ '%Y-%m-%d %H:%M',"%d/%m/%y %H:%M",'%m-%d-%Y %H:%M', "%m/%d/%y, %I:%M %p"]
+    drops = []
+    for conversation_id, group in df.groupby('Conversation'):
+        original_indices = group.index.tolist()
+        format_scores = []
+        
+        for format_ in formats:
+
+            try:
+                parsed_dates = pd.to_datetime(
+                    group['Datetime'], 
+                    format=format_
+                )
+                ordering_score = (original_indices == parsed_dates.sort_values().index).mean()
+                format_scores.append((format_, ordering_score))
+            except:
+                format_scores.append((format_, 0.0))
+
+        format_scores.sort(key=lambda x:x[1],reverse=True)
+        best_format = format_scores[0]
+
+        mask = result_df['Conversation'] == conversation_id
+        result_df.loc[mask, 'Datetime'] = pd.to_datetime(
+            result_df.loc[mask, 'Datetime'],
+            format=best_format[0]
+        )
+
+        
+        if best_format[1] < 0.1:
+            drops.append(conversation_id)
+            
+    for conversation_id in drops:
+        result_df = result_df[result_df.Conversation != conversation_id]
+       
+    return result_df, drops
+
 def main(PATH=None):
 
 
@@ -93,7 +133,7 @@ def main(PATH=None):
         
                     
                 if len(messageBuffer) > 0:
-                    parsedData.append([dateTime, author, ' '.join(messageBuffer)])
+                    parsedData.append([dateTime, author, ' '.join(messageBuffer), conversation])
                     
             successful_files.append(file)
     
@@ -106,7 +146,14 @@ def main(PATH=None):
         progress_bar.set_description(f"Processing files | Success: {len(successful_files)} | Failed: {len(failed_files)}")
         # time.sleep(.5)
     
-    
+    df = pd.DataFrame(parsedData, columns = ['Datetime', 'Author', 'Message', 'Conversation'])
+    df.Datetime = df.Datetime.apply(lambda x : x.replace('[','').replace(']',''))
+
+    df, drops = detect_datetime_formats(df)
+    for c in drops:
+        failed_files[c] = "The timestamps in this file were not read correctly, and is therefore being discarded. Make sure the file is already sorted chronologically, and that the regex is correct."
+        successful_files.remove(c+'.txt')
+
     # Update status log
     status["success"].extend(successful_files)
     status["failed"].update(failed_files)
@@ -115,7 +162,6 @@ def main(PATH=None):
     save_status_log(status, PATH)
     
     # Store data in memory
-    df = pd.DataFrame(parsedData, columns = ['Datetime', 'Author', 'Message', 'Conversation'])
     # df.drop(columns=['Message'], inplace=True) # test the memory usage of the keeping the chat messages
     # DROPPING THE MESSAGES COLUMN SAVES ~40% OF THE MEMORY COST
     
