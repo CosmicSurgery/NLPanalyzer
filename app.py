@@ -32,8 +32,15 @@ def main():
 
 def clear_data():
     print("Clearing data...")
-    os.remove(os.path.join(os.getcwd(), 'data', 'status.log'))
-    os.remove(os.path.join(os.getcwd(), 'vis', 'data.h5'))
+    try:
+        os.remove(os.path.join(os.getcwd(), 'data', 'status.log'))
+        os.remove(os.path.join(os.getcwd(), 'vis', 'data.h5'))
+    except:
+        print("logs already deleted.")
+        try:
+            os.remove(os.path.join(os.getcwd(), 'vis', 'data.h5'))
+        except:
+            print("h5 files already deleted.")
     
 
 def process_data():
