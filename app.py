@@ -1,5 +1,6 @@
 import argparse
 import os
+import subprocess
 
 # modules
 from data import processor
@@ -50,6 +51,8 @@ def process_data():
 
 def launch_dashboard():
     print("Launching interactive dashboard...")
+    result = subprocess.run(['cmd','/c', 'bokeh serve --show vis --port 8000'])
+    print(result.stdout)
     # Add your dashboard launching logic here
 
 def generate_report():
