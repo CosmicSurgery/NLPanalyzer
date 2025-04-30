@@ -5,6 +5,8 @@ import json
 import pandas as pd
 import time
 
+from lingua import LanguageDetectorBuilder, Language
+
 def detectPattern(s):
     patterns = [
     r'^(\d+/\d+/\d+, \d+:\d+\d+ [A-Z]*) -',
@@ -78,6 +80,17 @@ def detect_datetime_formats(df):
         result_df = result_df[result_df.Conversation != conversation_id]
        
     return result_df, drops
+
+
+# This is a function that will take a dataframe with column "Message", and option list of languages ( ie. ['ENGLISH','SPANISH'])
+# and return the same dataframe with additional columns n=len(detect) with a one-hot encoding of the languages detected
+def lang_detect(df, detect=['ENGLISH','SPANISH']):
+    languages = [getattr(Language, k) for k in detect]
+    detector = LanguageDetectorBuilder.from_languages(*languages).build()
+    langs = df.Message.apply(lambda x:detector.detect_language_of(x))
+    langs = langs.apply(lambda x:x.name if x is not None else None)
+    langs = pd.get_dummies(langs)
+    return pd.concat((df,langs),axis=1)
 
 def main(PATH=None):
 
@@ -167,3 +180,8 @@ def main(PATH=None):
     
     hd5_file_path = os.path.join(PATH.replace("data","vis"),"data.h5")
     df.to_hdf(hd5_file_path, "df")
+
+    # df = lang_detect(df)
+    # hd5_file_path = os.path.join(PATH.replace("data","vis"),"demo.h5")
+    # df.to_hdf(hd5_file_path, "df")
+
