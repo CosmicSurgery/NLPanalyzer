@@ -20,14 +20,14 @@ A comprehensive Python application for analyzing time-stamped chat exports with 
 ### Prerequisites
 
 - Python 3.8+
-- WhatsApp chat exports (.txt format)
+- Chat Messaging data (.txt format)
 
 ### Installation
 
 1. Clone this repository
 
 ```bash
-git clone https://github.com/yourusername/whatsapp-chat-analyzer.git
+git clone https://github.com/CosmicSurgery/NLPanalyzer.git
 cd nlp-analyzer
 ```
 
@@ -46,7 +46,7 @@ pip install -r requirements.txt
 
 ### Usage
 
-1. **Export your WhatsApp chats**:
+1. **Acquire .txt files of chat data**:
 
    - Open WhatsApp
    - Go to a chat
@@ -55,7 +55,7 @@ pip install -r requirements.txt
 
 2. **Place chat exports in the data folder**:
 
-   - Move all .txt files to `data/raw/`
+   - Move all .txt files to `data/DROP_TXT_HERE/`
 
 3. **Process the data**:
 
@@ -112,29 +112,22 @@ project/
 ├── app.py                  # Main entry point
 ├── config.yaml             # User configuration
 ├── data/
-│   ├── raw/                # Where users place chat exports
-│   ├── processed/          # Cleaned and processed data
-│   └── processor.py        # Processing pipeline
-├── analysis/
-│   ├── base_analyzer.py    # Common analysis functions
-│   ├── statistics.py       # Basic statistics
-│   ├── sentiment.py        # Sentiment analysis
-│   ├── topics.py           # Topic modeling
-│   └── language.py         # Language detection
-├── visualization/
-│   ├── dashboard.py        # Bokeh server setup
+│   ├── DROP_TXT_HERE/      # Where users place chat exports
+│   ├── processor.py        # Processing pipeline
+│   └── status.log          # log file to store results of processing
+├── vis/
+│   ├── main.py             # Bokeh server setup
 │   ├── tabs/               # One module per dashboard tab
 │   └── static_report.py    # Static report generator
 └── utils/
-    ├── text_processing.py
-    └── export.py
+    └── parser.py           # python helper functions to parse txt file
 ```
 
 ## Technical Implementation
 
 This project utilizes several advanced data science techniques:
 
-- **Text preprocessing** - Tokenization, lemmatization, and cleaning
+- **Text preprocessing** - Regular Expressions, Tokenization, and cleaning
 - **Sentiment analysis** - Using VADER and transformer-based models
 - **Topic modeling** - LDA and BERTopic implementations
 - **Language detection** - Using fasttext language identification models
@@ -145,15 +138,7 @@ This project utilizes several advanced data science techniques:
 The application uses:
 
 - HDF5 storage for efficient data management
-- Lazy loading to minimize memory usage
 - Optimized preprocessing pipeline to handle large chat histories
-
-## Future Improvements
-
-- Word cloud visualizations
-- Network analysis of group chats
-- AI-based conversation summarization
-- Personality insights based on messaging patterns
 
 ## License
 
