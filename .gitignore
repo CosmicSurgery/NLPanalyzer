@@ -3,6 +3,7 @@ bokeh vis*
 !data/DROP_TXT_HERE/example.txt
 staging
 *.ipynb*
+!Sentiment Analysis.ipynb
 *.egg*
 *.log
 *.h5
