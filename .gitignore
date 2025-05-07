@@ -4,6 +4,7 @@ bokeh vis*
 staging
 *.ipynb*
 !Sentiment Analysis.ipynb
+!Topic Modelling.ipynb
 *.egg*
 *.log
 *.h5
