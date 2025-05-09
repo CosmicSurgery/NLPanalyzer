@@ -58,44 +58,31 @@ def tab1(df, embeddings=None, sentiment=None, data=None):
     sentiment['timestamp'] =  (subset.Datetime - pd.Timestamp("1970-01-01")) // pd.Timedelta('1ms')
     data['timestamp'] =  (subset.Datetime - pd.Timestamp("1970-01-01")) // pd.Timedelta('1ms')
 
-    a = 5
-
-    def end_change(attr, old, new):
-        print(new, type(new))
-
-        view = subset[subset.timestamp <= new][['ENGLISH','SPANISH']].sum().to_list()
-        bar_source.data = {'categories':['ENGLISH','SPANISH'], 'values':view}
-        a=1
-        print(a)
-
-        # sentiment
-        data_sentiments = sentiment[subset.timestamp <= new].groupby(by='Author').sum(sentiment_cols)
-        src_sent_pos.data.update(data_sentiments[sentiment_cols_pos])
-        src_sent_neg.data.update(-data_sentiments[sentiment_cols_neg])
-        print(view)
-
-    def start_change(attr, old, new):
-        print(new, type(new))
 
 
-        view = subset[subset.timestamp >= new][['ENGLISH','SPANISH']].sum().to_list()
-        bar_source.data = {'categories':['ENGLISH','SPANISH'], 'values':view}
-
-        # sentiment
-        data_sentiments = sentiment[subset.timestamp >= new].groupby(by='Author').sum(sentiment_cols)
-        src_sent_pos.data.update(data_sentiments[sentiment_cols_pos])
-        src_sent_neg.data.update(-data_sentiments[sentiment_cols_neg])
-        print(view)
-
-    throttle_delay = 1
+    throttle_delay = 0.5
     import time
 
-    def test_change(attr, old, new):
+    def test_change1(attr, old, new):
         start = timeseries_figure.x_range.start
         end = timeseries_figure.x_range.end
 
 
         print(new, type(new))
+        s = time.time()
+        # Find the cumulative sums at the start and end timestamps
+        # start_row = cumulative_language[cumulative_language['timestamp'] <= start].iloc[-1] if not cumulative_language[cumulative_language['timestamp'] <= start].empty else pd.Series([0, 0, 0], index=['timestamp', 'cumulative_ENGLISH', 'cumulative_SPANISH'])
+        # end_row = cumulative_language[cumulative_language['timestamp'] <= end].iloc[-1] if not cumulative_language[cumulative_language['timestamp'] <= end].empty else pd.Series([0, 0, 0], index=['timestamp', 'cumulative_ENGLISH', 'cumulative_SPANISH'])
+
+        # # Calculate the sum within the selected range using the difference of cumulative sums
+        # english_sum = end_row['cumulative_ENGLISH'] - start_row['cumulative_ENGLISH']
+        # spanish_sum = end_row['cumulative_SPANISH'] - start_row['cumulative_SPANISH']
+
+        # view = pd.Series({'ENGLISH': english_sum, 'SPANISH': spanish_sum})
+        # next_data = view.reset_index(name='value').rename(columns={'index': 'language'})
+        # next_data['angle'] = next_data['value'] / next_data['value'].sum() * 2 * np.pi
+        # next_data['color'] = ['navy', 'firebrick']
+        # pie_source.data = next_data
 
         # Language
         view = subset[(subset.timestamp >= start) & (subset.timestamp <= end)][['ENGLISH', 'SPANISH']].sum()
@@ -112,6 +99,34 @@ def tab1(df, embeddings=None, sentiment=None, data=None):
         src_sent_pos.data.update(data_sentiments[sentiment_cols_pos])
         src_sent_neg.data.update(-data_sentiments[sentiment_cols_neg])
 
+        # positive_sentiment_data = {'Author': Author}
+        # negative_sentiment_data = {'Author': Author}
+
+        # for col in sentiment_cols_pos:
+        #     positive_sentiment_data[col] = []
+        # for col in sentiment_cols_neg:
+        #     negative_sentiment_data[col] = []
+
+        # for author in Author:
+        #     author_cumulative = cumulative_sentiment[cumulative_sentiment['Author'] == author]
+
+        #     start_row = author_cumulative[author_cumulative['timestamp'] <= start].iloc[-1] if not author_cumulative[author_cumulative['timestamp'] <= start].empty else pd.Series([0] * (len(sentiment_cols) + 2), index=['timestamp', 'Author', *[f'cumulative_{col}' for col in sentiment_cols]])
+        #     end_row = author_cumulative[author_cumulative['timestamp'] <= end].iloc[-1] if not author_cumulative[author_cumulative['timestamp'] <= end].empty else pd.Series([0] * (len(sentiment_cols) + 2), index=['timestamp', 'Author', *[f'cumulative_{col}' for col in sentiment_cols]])
+
+        #     for col in sentiment_cols_pos:
+        #         positive_sentiment_data[col].append(end_row[f'cumulative_{col}'] - start_row[f'cumulative_{col}'])
+
+        #     for col in sentiment_cols_neg:
+        #         negative_sentiment_data[col].append(-(end_row[f'cumulative_{col}'] - start_row[f'cumulative_{col}']))
+
+        # src_sent_pos.data = positive_sentiment_data
+        # src_sent_neg.data = negative_sentiment_data
+        
+        print(time.time()-s)
+
+
+
+    def test_change2(attr, old, new):
         # Topic
         global last_update
         current_time = time.time()
@@ -137,10 +152,11 @@ def tab1(df, embeddings=None, sentiment=None, data=None):
 
 
 
-    # timeseries_figure.x_range.on_change('end', end_change)
-    # timeseries_figure.x_range.on_change('start', start_change)
-    timeseries_figure.x_range.on_change('start', test_change)
-    timeseries_figure.x_range.on_change('end', test_change)
+
+    timeseries_figure.x_range.on_change('start', test_change1)
+    timeseries_figure.x_range.on_change('end', test_change1)
+    # timeseries_figure.x_range.on_change('start', test_change2)
+    # timeseries_figure.x_range.on_change('end', test_change2)
 
     # Language
     initial_view = subset[['ENGLISH', 'SPANISH']].sum()
@@ -165,6 +181,34 @@ def tab1(df, embeddings=None, sentiment=None, data=None):
     test_pie_chart.axis.visible = False
     test_pie_chart.grid.grid_line_color = None
 
+    # Language with cumsum
+
+# 1. Calculate the cumulative sum of 'ENGLISH' and 'SPANISH' columns
+    # cumulative_language = subset[['timestamp', 'ENGLISH', 'SPANISH']].copy()
+    # cumulative_language['cumulative_ENGLISH'] = cumulative_language['ENGLISH'].cumsum()
+    # cumulative_language['cumulative_SPANISH'] = cumulative_language['SPANISH'].cumsum()
+
+    # # 2. Create a ColumnDataSource for the pie chart
+    # initial_view = subset[['ENGLISH', 'SPANISH']].sum()
+    # initial_data = pd.Series(initial_view, index=['ENGLISH', 'SPANISH']).reset_index(name='value').rename(columns={'index': 'language'})
+    # initial_data['angle'] = initial_data['value'] / initial_data['value'].sum() * 2 * np.pi
+    # initial_data['color'] = ['navy', 'firebrick']
+    # pie_source = ColumnDataSource(initial_data)
+
+    # # 3. Create the pie chart figure and glyph
+    # test_pie_chart = figure(height=400, width=400, title="Language Distribution",
+    #                     tools="hover", tooltips="@language: @value (@percentage{0.2f}%)",
+    #                     x_range=(-0.5, 1.0))
+
+    # test_pie_chart.wedge(x=0, y=1, radius=0.4,
+    #                     start_angle=cumsum('angle', include_zero=True),
+    #                     end_angle=cumsum('angle'),
+    #                     line_color="white", fill_color='color', legend_field='language',
+    #                     source=pie_source)
+
+    # test_pie_chart.axis.axis_label = None
+    # test_pie_chart.axis.visible = False
+    # test_pie_chart.grid.grid_line_color = None
 
     # bar_source = ColumnDataSource(data={'categories':['ENGLISH','SPANISH'], 'values':subset[['ENGLISH','SPANISH']].sum().to_list()})
 
@@ -205,6 +249,44 @@ def tab1(df, embeddings=None, sentiment=None, data=None):
     stacked_bar_chart.legend.location = "top_left"
     stacked_bar_chart.axis.minor_tick_line_color = None
     stacked_bar_chart.outline_line_color = None
+
+    #sentiment with cumsum
+
+    # sentiment_cols_pos = ['sentiment_Neutral', 'sentiment_Positive', 'sen timent_Very Positive']
+    # sentiment_cols_neg = ['sentiment_Negative', 'sentiment_Very Negative']
+    # sentiment_cols = [*sentiment_cols_pos, *sentiment_cols_neg]
+    # labels = ['neu', 'pos', 'pos!!', 'neg', 'neg!!']
+    # Author = sentiment.Author.unique().tolist()
+    # colors = (*GnBu3[::-1], *OrRd3[:2][::-1])
+
+    # # 1. Calculate cumulative sums for sentiment columns
+    # cumulative_sentiment = sentiment[['timestamp', 'Author', *sentiment_cols]].copy()
+    # for col in sentiment_cols:
+    #     cumulative_sentiment[f'cumulative_{col}'] = cumulative_sentiment.groupby('Author')[col].cumsum()
+    
+    # print(cumulative_sentiment)
+
+    # # 2. Create ColumnDataSources for the stacked bar chart (initialized with empty data)
+    # src_sent_pos = ColumnDataSource(dict(Author=Author, **{col: [0] * len(Author) for col in sentiment_cols_pos}))
+    # src_sent_neg = ColumnDataSource(dict(Author=Author, **{col: [0] * len(Author) for col in sentiment_cols_neg}))
+
+    # # 3. Create the stacked bar chart figure and glyphs
+    # stacked_bar_chart = figure(y_range=Author, height=400, width=400, title="Sentiment Analysis",
+    #                         toolbar_location=None)
+
+    # stacked_bar_chart.hbar_stack(sentiment_cols_pos, y='Author', height=0.9, color=colors[:len(sentiment_cols_pos)],
+    #                             source=src_sent_pos, legend_label=[f"{s}" for s in labels[:len(sentiment_cols_pos)]])
+
+    # stacked_bar_chart.hbar_stack(sentiment_cols_neg, y='Author', height=0.9, color=colors[len(sentiment_cols_pos):],
+    #                             source=src_sent_neg)
+
+    # stacked_bar_chart.y_range.range_padding = 0.1
+    # stacked_bar_chart.ygrid.grid_line_color = None
+    # stacked_bar_chart.legend.location = "top_left"
+    # stacked_bar_chart.axis.minor_tick_line_color = None
+    # stacked_bar_chart.outline_line_color = None
+
+
 
     # src_sent_pos.data.update(data_sentiments[sentiment_cols_pos])
     # src_sent_neg.data.update(data_sentiments[sentiment_cols_neg])
