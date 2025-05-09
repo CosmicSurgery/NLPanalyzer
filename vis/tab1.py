@@ -6,6 +6,7 @@ from bokeh.models.layouts import TabPanel, Tabs
 from bokeh.models import CustomJS, Div, DataRange1d, BoxAnnotation
 from bokeh.models.nodes import Node
 from bokeh.transform import cumsum
+from scipy.signal import savgol_filter
 
 import numpy as np
 import pandas as pd
@@ -22,7 +23,26 @@ def tab1(df, embeddings=None, sentiment=None, data=None):
 
     data.index = subset.index
 
-    reset_data = {x:[] for x in subset.columns.unique()}
+    # Timeseries graph goes here
+    df_sample = df.copy()
+    df_sample.Datetime = df_sample.Datetime.dt.floor('h')
+    df_sample['msg'] = 1
+    df_sample = df_sample.groupby('Conversation')[['Datetime','msg']]
+    df_sample = df_sample.get_group('Angelita').copy()
+    date_range = pd.date_range(df_sample.Datetime.iloc[-0], df_sample.Datetime.iloc[-1],freq='h')
+
+    window_length = 3
+    polyorder = 3   
+
+    timeseries_df = pd.DataFrame()
+    timeseries_df['Datetime'] = df_sample.Datetime.value_counts().reindex(date_range, fill_value=0).index
+    timeseries_df['PDF'] = df_sample.Datetime.value_counts().reindex(date_range, fill_value=0).tolist()
+    timeseries_df['CDF'] = 1 #df_sample.Datetime.value_counts().reindex(date_range, fill_value=0).cumsum().tolist()
+    timeseries_df['savgol'] = savgol_filter(df_sample.Datetime.value_counts().reindex(date_range, fill_value=0),window_length*24, polyorder)*24
+    timeseries_df['savgol ^2'] = savgol_filter(timeseries_df['savgol'] ,window_length*24, polyorder)
+
+
+    reset_data = {x:[] for x in timeseries_df.columns.unique()}
 
 
 
@@ -32,7 +52,7 @@ def tab1(df, embeddings=None, sentiment=None, data=None):
     timeseries_figure.add_layout(legend, 'right')
 
     src = ColumnDataSource(reset_data)
-    renders = timeseries_figure.line(source=src, x='Datetime', y = 'msg')
+    renders = [timeseries_figure.line(source=src, x='Datetime', y = col, visible=False) for col in timeseries_df.columns[1:]]
 
     select = figure(title="scroll test", 
                     height=130,width=1000, y_range = timeseries_figure.y_range,
@@ -41,16 +61,43 @@ def tab1(df, embeddings=None, sentiment=None, data=None):
     select.x_range.range_padding = 0
     select.x_range.bounds = 'auto'
 
-    range_tool = RangeTool(x_range=timeseries_figure.x_range, start_gesture='pan')
+    range_tool = RangeTool(x_range=timeseries_figure.x_range, y_range=timeseries_figure.y_range, start_gesture='pan')
     range_tool.overlay.fill_color = 'navy'
     range_tool.overlay.fill_alpha = 0.2
     range_tool.overlay.syncable=True
 
-    select.line('Datetime','msg', source=src)
+    select_renders = [select.line(source=src, x='Datetime', y = col, visible=False) for col in timeseries_df.columns[1:]]
     select.ygrid.grid_line_color = None
     select.add_tools(range_tool)          
 
-    src.data.update(subset)
+    checkbox = CheckboxGroup(labels=timeseries_df.columns.tolist()[1:], active=[])
+    def update_timeseries_col(attr,old,new):
+        ymin = 0
+        ymax = 1
+        for i in range(len(timeseries_df.columns[1:])):
+            if i in new:
+                renders[i].visible = True
+                select_renders[i].visible = True
+                ymax_ = timeseries_df[timeseries_df.columns[i+1]].max()
+                ymin_ = timeseries_df[timeseries_df.columns[i+1]].min()
+                print(ymax_)
+                if ymax_ > ymax:
+                    ymax = ymax_ + ymax_ * .1
+                    ymin = ymin_ - ymax_ * .1
+
+            else:
+                renders[i].visible = False
+                select_renders[i].visible = False
+        timeseries_figure.y_range= DataRange1d(start=ymin ,end=ymax)
+        select.y_range= DataRange1d(start=ymin ,end=ymax)
+        
+        # renders.visible = new
+        print(timeseries_figure.y_range)
+    checkbox.on_change('active', update_timeseries_col)
+
+
+
+    src.data.update(timeseries_df)
 
     # THIS IS MY WORKSPACE BELOW HERE!!!!!!
 
@@ -89,6 +136,7 @@ def tab1(df, embeddings=None, sentiment=None, data=None):
         next_data = pd.Series(view, index=['ENGLISH', 'SPANISH']).reset_index(name='value').rename(columns={'index': 'language'})
         next_data['angle'] = next_data['value'] / next_data['value'].sum() * 2 * np.pi
         next_data['color'] = ['navy','firebrick']
+        next_data['percentage'] = next_data['value']/next_data.value.sum()
         pie_source.data = next_data
 
         # view = subset[(subset.timestamp >= start) & (subset.timestamp <= end)][['ENGLISH','SPANISH']].sum().to_list()
@@ -321,7 +369,7 @@ def tab1(df, embeddings=None, sentiment=None, data=None):
     # scatter_plot = figure(width=400, height=400)
     # scatter_plot.scatter(*data[subset.SPANISH].T,*data[subset.ENGLISH].T, size =np.ones(len(data))*.11, color = "navy", alpha=0.5)
 
-    layout = column(row(column(timeseries_figure,select)), row(test_pie_chart,stacked_bar_chart, scatter_plot))
+    layout = column(row(column(timeseries_figure,select),checkbox), row(test_pie_chart,stacked_bar_chart, scatter_plot))
     tab = TabPanel(child=layout, title = 'This is a test')
 
     return tab
