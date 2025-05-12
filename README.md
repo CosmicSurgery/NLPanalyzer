@@ -6,7 +6,7 @@ This idea builds off of a previous idea to visualize whatsapp chats with interac
 
 A comprehensive Python application for analyzing time-stamped chat exports with advanced natural language processing capabilities.
 
-![Dashboard Preview](https://via.placeholder.com/800x450)
+https://github.com/user-attachments/assets/1943a761-5a7e-4b46-bd0f-33fa6843f343
 
 ## Features
 
