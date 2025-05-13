@@ -1,5 +1,6 @@
 bokeh vis*
 *.txt
+!requirements.txt
 !data/DROP_TXT_HERE/example.txt
 staging
 *.ipynb*
