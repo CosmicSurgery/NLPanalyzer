@@ -6,6 +6,7 @@ staging
 *.ipynb*
 !Sentiment Analysis.ipynb
 !Topic Modelling.ipynb
+!Language Detection.ipynb
 *.egg*
 *.log
 *.h5
