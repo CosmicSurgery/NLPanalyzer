@@ -10,4 +10,4 @@ staging
 *.egg*
 *.log
 *.h5
-*.pkl
+*.pkl\*.mp4
